@@ -1,6 +1,5 @@
 .idea
 venv
-models/
 .ipynb_checkpoints/
 data/
 *.pyc
