@@ -3,23 +3,24 @@ import numpy as np
 from PIL import Image
 import tensorflow as tf
 import matplotlib.pyplot as plt
-    
+from tensorflow.keras import models
+
+inverter = models.load_model('models/inverted.h5') 
+model    = models.load_model('models/binary.h5')
+alphabet = 'ABCDEFGHIKLMNOPQRSTUVWXY'
+
 # predict a window
-def pred_window(window, model, alphabet, size, rescale, gray, binary):
-    if gray:
-        window = cv2.cvtColor(window, cv2.COLOR_BGR2GRAY)
-    if binary:
-        _, window = cv2.threshold(window,0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
-    
-    cv2.imwrite('test.jpg', window)
+def pred_window(window):
+    window = cv2.cvtColor(window, cv2.COLOR_BGR2GRAY)
+    _, window = cv2.threshold(window,0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
     window = np.expand_dims(window, 0)
-    if gray:
-        window = np.expand_dims(window, 3)
-    if rescale:
-        window = window / 127.5 - 1
+    window = np.expand_dims(window, 3)
 
     in_tensor = tf.convert_to_tensor(window)
-    in_tensor = tf.image.resize_with_pad(in_tensor, size[0], size[1])
+    in_tensor = tf.image.resize_with_pad(in_tensor, 128, 128)
+    if inverter(in_tensor)[0,0] > 0.5:
+        in_tensor = tf.math.abs(in_tensor - 255)
+    
     lbl = np.argmax(model(in_tensor).numpy())
     return alphabet[lbl]
 
